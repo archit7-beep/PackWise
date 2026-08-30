@@ -10,18 +10,19 @@ Member 2 is responsible for converting **raw product packaging images** into **c
 
 ## 🧱 What Was Built
 
-### 1. Image Preprocessing Pipeline (`image_preprocessor.py`)
-Before running OCR, images undergo preprocessing to maximize recognition accuracy:
-* **EXIF Orientation Correction**: Auto-rotates photos taken in portrait/sideways modes on mobile devices so text is always upright.
-* **RGB Normalization**: Converts various color palettes (RGBA, palette mode, grayscale) into standard 3-channel RGB.
-* **CLAHE Contrast Enhancement**: Applies OpenCV Contrast Limited Adaptive Histogram Equalization to make faded, low-contrast, or unevenly lit text on packaging readable without over-amplifying background noise.
+### 1. Advanced Computer Vision Preprocessor (`image_preprocessor.py`)
+Before running OCR, images undergo an automated enhancement pipeline:
+* **EXIF Camera Orientation Correction**: Auto-rotates portrait/landscape photos taken on mobile devices.
+* **Morphological Auto-Deskewing**: Uses morphological kernel dilation and `cv2.minAreaRect` contour angle analysis to detect text slant ($-45^\circ$ to $+45^\circ$) and rotate tilted packaging flat.
+* **CLAHE Adaptive Contrast Enhancement**: Applies Contrast Limited Adaptive Histogram Equalization per channel to make faded or glossy packaging text readable.
+* **RGB Color Normalization**: Normalizes all image channels into standardized 3-channel RGB.
 
-### 2. OCR Engine Integration (`ocr_service.py` & `ocr_engine.py`)
-* **Engine Choice**: **EasyOCR** (PyTorch-based, supports English + multilingual scripts, fully compatible with Python 3.14 on Windows).
-* **Singleton Model Loading**: The EasyOCR Reader model weights are loaded once in memory upon first call, avoiding costly reload overhead on each request.
-* **Async Threadpool Execution**: Model inference runs in a separate thread pool via `run_in_threadpool()` so it never blocks FastAPI's async event loop.
-* **Bounding Box Normalization**: Converts polygon corner coordinates into standard axis-aligned bounding boxes `[x1, y1, x2, y2]`.
-* **Confidence Filtering**: Discards noisy recognitions below the $50\%$ confidence threshold ($0.50$).
+### 2. Multi-Orientation OCR Engine (`ocr_service.py` & `ocr_engine.py`)
+* **Engine Choice**: **EasyOCR** (PyTorch-based, multilingual, compatible with Python 3.14 on Windows).
+* **Multi-Orientation Auto-Recovery**: If a package is uploaded sideways ($90^\circ / 270^\circ$) or upside-down ($180^\circ$), the engine automatically detects and tests alternate rotations, picking the orientation with the highest total confidence.
+* **Vertical / Sideways Text Block Detection**: Supports `rotation_info=[90, 180, 270]` for text printed vertically along margins (e.g. side nutrition tables).
+* **Singleton In-Memory Model**: The model weights are cached in memory upon first call for fast repeated inference.
+* **Async Threadpool Execution**: Runs via `run_in_threadpool()` to prevent blocking the async FastAPI event loop.
 
 ### 3. Formal Data Contracts & Schemas (`extraction.py`)
 Defined strongly typed Pydantic models for OCR output:
@@ -53,12 +54,12 @@ PackWise/
 │       └── test_ocr.py                        # CLI test runner for any image
 │
 └── backend/
-    ├── requirements.txt                       # Backend dependencies (includes OCR)
+    ├── requirements.txt                       # Backend dependencies
     └── app/
         ├── schemas/
         │   └── extraction.py                  # OCRRegion & OCRResult models
         └── services/
-            ├── image_preprocessor.py          # EXIF fix + RGB + CLAHE contrast
+            ├── image_preprocessor.py          # Auto-deskew + EXIF + CLAHE contrast
             ├── ocr_service.py                 # Backend OCR service adapter
             └── pipeline_service.py            # Pipeline orchestrator
 ```
@@ -88,6 +89,6 @@ From the repository root:
 # 1. Run with default test image
 python data/ocr/test_ocr.py
 
-# 2. Run with any custom product image
+# 2. Run with any custom product image (supports tilted or rotated images)
 python data/ocr/test_ocr.py "C:\path\to\your\product_image.jpg"
 ```
