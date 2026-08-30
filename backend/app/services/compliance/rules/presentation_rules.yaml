@@ -1,0 +1,45 @@
+- id: LMPC-R9-LANGUAGE
+  rule_ref: "Rule 9(2)"
+  title: "Declaration language — Hindi (Devanagari) or English"
+  category: presentation
+  description: "Hindi OR English is sufficient — do not flag English-only labels as non-compliant on language grounds."
+  default_severity: minor
+  applies_to_categories: ["all"]
+  effective_from: "2011-03-01"
+  validation_type: "language_or_check"
+  field: "declaration_languages"
+  params:
+    acceptable_any_of: ["hindi", "english"]
+  fix_example: "Add English or Hindi (Devanagari) text for every mandatory declaration"
+  penalty_tiers:
+    first_offence_max: 25000
+    basis: "Section 36(1), LM Act 2009 (only if BOTH absent)"
+  test_cases:
+    - name: "english only passes"
+      fields: {declaration_languages: ["english"]}
+      expect_status: pass
+    - name: "neither language fails"
+      fields: {declaration_languages: ["french"]}
+      expect_status: fail
+
+- id: LMPC-R9-CONTRAST
+  rule_ref: "Rule 9"
+  title: "MRP and net quantity printed in contrasting colour"
+  category: presentation
+  description: "MRP and net quantity must contrast conspicuously with the background."
+  default_severity: minor
+  applies_to_categories: ["all"]
+  effective_from: "2011-03-01"
+  validation_type: "field_present_non_empty"
+  field: "mrp_contrast_ok"
+  fix_example: "Print MRP and net quantity in a colour that contrasts with the package background"
+  penalty_tiers:
+    first_offence_max: 5000
+    basis: "Corrective notice territory"
+  test_cases:
+    - name: "unset fails"
+      fields: {mrp_contrast_ok: ""}
+      expect_status: fail
+    - name: "confirmed passes"
+      fields: {mrp_contrast_ok: "yes"}
+      expect_status: pass

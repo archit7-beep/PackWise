@@ -1,0 +1,39 @@
+- id: LMPC-R6-10-ECOM
+  rule_ref: "Rule 6(10)/(11)"
+  title: "E-commerce listing must show all Rule 6(1) declarations except mfg date"
+  category: ecommerce
+  description: "All Rule 6(1) declarations must appear on the digital listing except month/year of manufacture."
+  default_severity: major
+  applies_to_categories: ["ecommerce_listing"]
+  effective_from: "2021-01-01"
+  amendment_ref: "Legal Metrology (Packaged Commodities) Amendment Rules, 2021"
+  validation_type: "ecommerce_declarations_present"
+  required_fields:
+    - manufacturer_name_address
+    - generic_name
+    - net_quantity
+    - mrp
+    - consumer_care
+  excluded_fields:
+    - mfg_month_year
+  fix_example: "Add the missing field(s) to the listing, e.g. MRP Rs.199 (incl. of all taxes)"
+  penalty_tiers:
+    first_offence_max: 25000
+    basis: "Section 36(1), LM Act 2009"
+  test_cases:
+    - name: "missing mrp on listing fails"
+      fields:
+        manufacturer_name_address: "Fresh Glow Pvt Ltd"
+        generic_name: "Soap"
+        net_quantity: "75"
+        mrp: ""
+        consumer_care: "care@example.com"
+      expect_status: fail
+    - name: "all required present, mfg date absent, still passes"
+      fields:
+        manufacturer_name_address: "Fresh Glow Pvt Ltd"
+        generic_name: "Soap"
+        net_quantity: "75"
+        mrp: "45"
+        consumer_care: "care@example.com"
+      expect_status: pass

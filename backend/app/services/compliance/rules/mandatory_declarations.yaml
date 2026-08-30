@@ -1,0 +1,169 @@
+- id: LMPC-R6-1A-MFR
+  rule_ref: "Rule 6(1)(a)"
+  act_basis: "Legal Metrology Act, 2009 — Section 18"
+  title: "Manufacturer / packer / importer name and address"
+  category: mandatory_declaration
+  description: "The package must declare the name and complete address of the manufacturer (and packer, if different; importer for imported goods)."
+  default_severity: critical
+  applies_to_categories: ["all"]
+  exemption_refs: ["LMPC-EXEMPT-R26"]
+  effective_from: "2011-03-01"
+  validation_type: "field_present_non_empty"
+  field: "manufacturer_name_address"
+  fix_example: "Fresh Glow Pvt Ltd, Plot 12 MIDC, Pune, Maharashtra 411019"
+  confidence_threshold: 0.6
+  penalty_tiers:
+    first_offence_max: 25000
+    second_offence_max: 50000
+    subsequent_offence_min: 50000
+    subsequent_offence_max: 100000
+    subsequent_imprisonment_months_max: 12
+    basis: "Section 36(1), LM Act 2009"
+  test_cases:
+    - name: "missing address fails"
+      fields: {manufacturer_name_address: ""}
+      expect_status: fail
+    - name: "valid address passes"
+      fields: {manufacturer_name_address: "Fresh Glow Pvt Ltd, Pune 411019"}
+      expect_status: pass
+
+- id: LMPC-R6-1B-NAME
+  rule_ref: "Rule 6(1)(b)"
+  title: "Common or generic name of the commodity"
+  category: mandatory_declaration
+  description: "The package must state the common/generic name of the commodity."
+  default_severity: major
+  applies_to_categories: ["all"]
+  exemption_refs: ["LMPC-EXEMPT-R26"]
+  effective_from: "2011-03-01"
+  validation_type: "field_present_non_empty"
+  field: "generic_name"
+  fix_example: "Toilet Soap"
+  penalty_tiers:
+    first_offence_max: 25000
+    basis: "Section 36(1), LM Act 2009"
+  test_cases:
+    - name: "missing name fails"
+      fields: {generic_name: ""}
+      expect_status: fail
+    - name: "present name passes"
+      fields: {generic_name: "Toilet Soap"}
+      expect_status: pass
+
+- id: LMPC-R6-NETQTY
+  rule_ref: "Rule 6(1) read with Rule 8 (standard units) and Rule 11 (exclusions)"
+  title: "Net quantity in standard units"
+  category: net_quantity
+  description: "Net quantity in standard units of weight/measure/number; packaging weight excluded (Rule 11)."
+  default_severity: critical
+  applies_to_categories: ["all"]
+  exemption_refs: ["LMPC-EXEMPT-R26", "LMPC-EXEMPT-BULK"]
+  effective_from: "2011-03-01"
+  validation_type: "net_quantity_standard_unit"
+  field: "net_quantity"
+  params:
+    allowed_units: ["g", "kg", "ml", "l", "number"]
+  fix_example: "100 g"
+  penalty_tiers:
+    first_offence_max: 25000
+    basis: "Section 36(1)/(2), LM Act 2009"
+  test_cases:
+    - name: "non-standard unit fails"
+      fields: {net_quantity: "100", net_quantity_unit: "grams"}
+      expect_status: fail
+    - name: "standard unit passes"
+      fields: {net_quantity: "100", net_quantity_unit: "g"}
+      expect_status: pass
+
+- id: LMPC-R6-1E-MRP
+  rule_ref: "Rule 6(1)(e)"
+  title: "Maximum Retail Price inclusive of all taxes"
+  category: mandatory_declaration
+  description: "MRP inclusive of all taxes; cannot be altered once printed (Rule 18(5)/(6)); no sale above MRP (Rule 18(2))."
+  default_severity: critical
+  applies_to_categories: ["all"]
+  exemption_refs: ["LMPC-EXEMPT-R26"]
+  effective_from: "2011-03-01"
+  validation_type: "field_present_numeric_positive"
+  field: "mrp"
+  fix_example: "MRP Rs.199 (incl. of all taxes)"
+  penalty_tiers:
+    first_offence_max: 25000
+    basis: "Section 36(1), LM Act 2009"
+  test_cases:
+    - name: "missing MRP fails"
+      fields: {mrp: ""}
+      expect_status: fail
+    - name: "valid MRP passes"
+      fields: {mrp: "45"}
+      expect_status: pass
+
+- id: LMPC-R6-1F-MFGDATE
+  rule_ref: "Rule 6(1)(f)"
+  title: "Month and year of manufacture / packing / import"
+  category: mandatory_declaration
+  description: "Month and year of manufacture/pre-packing/import."
+  default_severity: major
+  applies_to_categories: ["all"]
+  exemption_refs: ["LMPC-EXEMPT-R26", "LMPC-EXEMPT-PSU-MFGDATE"]
+  effective_from: "2011-03-01"
+  validation_type: "field_present_date"
+  field: "mfg_month_year"
+  fix_example: "03/2026"
+  penalty_tiers:
+    first_offence_max: 25000
+    basis: "Section 36(1), LM Act 2009"
+  test_cases:
+    - name: "missing date fails"
+      fields: {mfg_month_year: ""}
+      expect_status: fail
+    - name: "valid MM/YYYY passes"
+      fields: {mfg_month_year: "03/2026"}
+      expect_status: pass
+
+- id: LMPC-R6-2-CONSUMERCARE
+  rule_ref: "Rule 6(2)"
+  title: "Consumer care / complaint contact details"
+  category: mandatory_declaration
+  description: "Name, address, phone, and email for consumer complaints."
+  default_severity: major
+  applies_to_categories: ["all"]
+  exemption_refs: ["LMPC-EXEMPT-R26"]
+  effective_from: "2011-03-01"
+  validation_type: "field_present_non_empty"
+  field: "consumer_care"
+  fix_example: "Fresh Glow Pvt Ltd, 1800-000-1111, care@freshglow.example"
+  penalty_tiers:
+    first_offence_max: 25000
+    basis: "Section 36(1), LM Act 2009"
+  test_cases:
+    - name: "missing contact fails"
+      fields: {consumer_care: ""}
+      expect_status: fail
+    - name: "present contact passes"
+      fields: {consumer_care: "1800-000-1111, care@example.com"}
+      expect_status: pass
+
+- id: LMPC-R6-COO
+  rule_ref: "Rule 6 (imported-goods provisions)"
+  title: "Country of origin (imported goods only)"
+  category: mandatory_declaration
+  description: "Required where the commodity is imported."
+  default_severity: major
+  applies_to_categories: ["imported"]
+  exemption_refs: []
+  effective_from: "2011-03-01"
+  validation_type: "field_present_non_empty"
+  field: "country_of_origin"
+  fix_example: "Made in Vietnam"
+  condition: "is_imported == true"
+  penalty_tiers:
+    first_offence_max: 25000
+    basis: "Section 36(1), LM Act 2009"
+  test_cases:
+    - name: "missing origin fails"
+      fields: {country_of_origin: ""}
+      expect_status: fail
+    - name: "present origin passes"
+      fields: {country_of_origin: "Vietnam"}
+      expect_status: pass

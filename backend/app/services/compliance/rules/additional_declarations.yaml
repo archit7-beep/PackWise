@@ -1,0 +1,44 @@
+- id: LMPC-R6-UNITPRICE
+  rule_ref: "Rule 6(1) — unit sale price"
+  title: "Unit sale price declaration (where applicable)"
+  category: mandatory_declaration
+  description: "Price per standard unit, where a unit sale price declaration applies."
+  default_severity: minor
+  applies_to_categories: ["all"]
+  exemption_refs: ["LMPC-EXEMPT-R26"]
+  effective_from: "2011-03-01"
+  validation_type: "field_present_non_empty"
+  field: "unit_sale_price"
+  fix_example: "Rs.0.60/g"
+  penalty_tiers:
+    first_offence_max: 10000
+    basis: "Section 36(1), LM Act 2009"
+  test_cases:
+    - name: "missing unit price fails"
+      fields: {unit_sale_price: ""}
+      expect_status: fail
+    - name: "present unit price passes"
+      fields: {unit_sale_price: "Rs.0.60/g"}
+      expect_status: pass
+
+- id: LMPC-R6-FOOD-FSSAI-FLAG
+  rule_ref: "Rule 6, Explanation III"
+  title: "Food category — cross-check against FSSAI labelling rules"
+  category: mandatory_declaration
+  description: "Informational flag for food products — recommend a separate FSSAI check."
+  default_severity: minor
+  applies_to_categories: ["food"]
+  effective_from: "2011-03-01"
+  validation_type: "field_present_non_empty"
+  field: "fssai_license_number"
+  fix_example: "14-digit FSSAI license number printed on the label"
+  penalty_tiers:
+    first_offence_max: 0
+    basis: "Not an LMPC penalty — informational cross-check only"
+  test_cases:
+    - name: "missing fssai number flagged"
+      fields: {fssai_license_number: ""}
+      expect_status: fail
+    - name: "present fssai number passes"
+      fields: {fssai_license_number: "12345678901234"}
+      expect_status: pass

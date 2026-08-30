@@ -1,0 +1,34 @@
+- id: LMPC-EXEMPT-R26
+  rule_ref: "Rule 26"
+  title: "General exemptions"
+  description: "Tobacco products are carved back IN despite the ≤10g/10ml exemption."
+  conditions:
+    - key: "net_weight_or_measure_le_10"
+      description: "Net weight/measure is 10g or 10ml or less"
+      exclude_categories: ["tobacco"]
+    - key: "is_fast_food_hotel_restaurant"
+      description: "Fast-food item packed by a hotel or restaurant"
+    - key: "is_drug_price_control_order_item"
+      description: "Scheduled/non-scheduled formulation under the Drugs (Price Control) Order"
+    - key: "is_agri_produce_above_50kg"
+      description: "Agricultural farm produce in packages above 50 kg"
+    - key: "is_loose_garment_hosiery_inspectable"
+      description: "Garment/hosiery sold loose/open, inspectable before purchase"
+      amendment_ref: "2022 Second Amendment"
+      effective_from: "2023-01-01"
+
+- id: LMPC-EXEMPT-BULK
+  rule_ref: "Bulk / wholesale package exemption"
+  title: "Packages above 25kg/25L (50kg for cement & fertiliser)"
+  description: "Exempted from Chapter II retail-package declaration requirements."
+  conditions:
+    - key: "net_weight_kg_gt_25_or_volume_l_gt_25"
+      description: "Net weight > 25kg or volume > 25L"
+
+- id: LMPC-EXEMPT-PSU-MFGDATE
+  rule_ref: "Rule 6(1)(f) — carve-out"
+  title: "Mfg-date exemption for PSU-marketed bidi/incense/LPG cylinders"
+  description: "Exempt from month/year-of-manufacture declaration specifically."
+  conditions:
+    - key: "is_psu_marketed_bidi_incense_or_lpg"
+      description: "Product is bidi, incense sticks, or domestic LPG cylinder marketed by a PSU"
