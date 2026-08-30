@@ -6,8 +6,9 @@ from app.core.config import settings
 
 # 1. Create the Async Engine
 # echo=settings.DEBUG logs SQL queries in development mode
+db_url = settings.DATABASE_URL or "sqlite+aiosqlite:///./packwise_dev.db"
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    db_url,
     echo=settings.DEBUG,
     future=True
 )
