@@ -1,16 +1,26 @@
+import uuid
+from typing import Any
+
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy import update
-from typing import List, Dict, Any
 
-from app.database.models import Inspection, Image, InspectionStatus, OCRResult, ComplianceResult, ExtractedProduct, ComplianceViolation
 from app.core.exceptions import PackWiseException
 from app.core.logging import logger
-import uuid
+from app.database.models import (
+    ComplianceResult,
+    ComplianceViolation,
+    ExtractedProduct,
+    Image,
+    Inspection,
+    InspectionStatus,
+    OCRResult,
+)
 from app.schemas.extraction import ExtractedProductData
 
-async def create_inspection(db: AsyncSession, storage_paths: List[str]) -> Inspection:
+
+async def create_inspection(db: AsyncSession, storage_paths: list[str]) -> Inspection:
     """
     Creates an Inspection and its corresponding Images in the database.
     This service assumes the physical files have already been stored by the StorageService.
@@ -27,6 +37,7 @@ async def create_inspection(db: AsyncSession, storage_paths: List[str]) -> Inspe
         db.add(new_inspection)
         
         # Create Images
+        images_list = []
         for path in storage_paths:
             new_image = Image(
                 id=uuid.uuid4(),
@@ -35,20 +46,21 @@ async def create_inspection(db: AsyncSession, storage_paths: List[str]) -> Inspe
                 side=None # MVP: we are not collecting side yet from multipart forms easily for multiple files
             )
             db.add(new_image)
+            images_list.append(new_image)
         
         # Commit transaction
         await db.commit()
         
-        # Refresh to ensure relationships and created_at timestamps are loaded
+        # Refresh to ensure created_at timestamps are loaded
         await db.refresh(new_inspection)
         
         logger.info(f"Successfully created Inspection {inspection_id} with {len(storage_paths)} Images")
-        return new_inspection
+        return await get_inspection(db, inspection_id)
         
     except Exception as e:
         # Rollback the transaction on failure
         await db.rollback()
-        logger.error(f"Failed to create inspection in database: {str(e)}")
+        logger.error(f"Failed to create inspection in database: {e!s}")
         
         raise PackWiseException(
             message="Failed to create inspection record in the database.",
@@ -68,14 +80,14 @@ async def update_inspection_status(db: AsyncSession, inspection_id: uuid.UUID, n
         logger.info(f"Updated Inspection {inspection_id} status to {new_status.value}")
     except Exception as e:
         await db.rollback()
-        logger.error(f"Failed to update inspection status: {str(e)}")
+        logger.error(f"Failed to update inspection status: {e!s}")
         raise PackWiseException(
             message="Database error while updating inspection status.",
             code="DATABASE_ERROR",
             status_code=500
         ) from e
 
-async def save_ocr_result(db: AsyncSession, inspection_id: uuid.UUID, ocr_data: Dict[str, Any]) -> None:
+async def save_ocr_result(db: AsyncSession, inspection_id: uuid.UUID, ocr_data: dict[str, Any]) -> None:
     """
     Saves the aggregated OCRResult for the inspection.
     """
@@ -93,24 +105,27 @@ async def save_ocr_result(db: AsyncSession, inspection_id: uuid.UUID, ocr_data: 
         logger.info(f"Saved OCR result for inspection {inspection_id}")
     except Exception as e:
         await db.rollback()
-        logger.error(f"Failed to save OCR result: {str(e)}")
+        logger.error(f"Failed to save OCR result: {e!s}")
         raise PackWiseException(
             message="Database error while saving OCR result.",
             code="DATABASE_ERROR",
             status_code=500
         ) from e
 
-async def save_extracted_product(db: AsyncSession, inspection_id: uuid.UUID, extracted_data: ExtractedProductData) -> None:
+async def save_extracted_product(db: AsyncSession, inspection_id: uuid.UUID, extracted_data: ExtractedProductData, original_nlp_data: ExtractedProductData = None) -> None:
     """
     Saves the NLP ExtractedProduct output.
     """
     try:
         # Pydantic model dumped to JSON compatible dict
         data_json = extracted_data.model_dump(mode="json")
+        original_json = original_nlp_data.model_dump(mode="json") if original_nlp_data else None
+        
         result = ExtractedProduct(
             id=uuid.uuid4(),
             inspection_id=inspection_id,
             data=data_json,
+            original_nlp_data=original_json,
             confidence_score=extracted_data.confidence_score
         )
         db.add(result)
@@ -118,25 +133,43 @@ async def save_extracted_product(db: AsyncSession, inspection_id: uuid.UUID, ext
         logger.info(f"Saved ExtractedProduct for inspection {inspection_id}")
     except Exception as e:
         await db.rollback()
-        logger.error(f"Failed to save ExtractedProduct: {str(e)}")
+        logger.error(f"Failed to save ExtractedProduct: {e!s}")
         raise PackWiseException(
             message="Database error while saving NLP extraction.",
             code="DATABASE_ERROR",
             status_code=500
         ) from e
 
-async def save_compliance_result(db: AsyncSession, inspection_id: uuid.UUID, compliance_data: Dict[str, Any]) -> None:
+async def save_compliance_result(db: AsyncSession, inspection_id: uuid.UUID, compliance_data: dict[str, Any], llm_verification: dict[str, Any] = None) -> None:
     """
     Saves the ComplianceResult and multiple ComplianceViolations.
     """
     try:
         result_id = uuid.uuid4()
+        
+        status = None
+        message = None
+        references = None
+        
+        if llm_verification:
+            status = llm_verification.get("status")
+            message = llm_verification.get("message")
+            references = llm_verification.get("references")
+            
         result = ComplianceResult(
             id=result_id,
             inspection_id=inspection_id,
             status=compliance_data.get("status", "FAIL"),
+            score=compliance_data.get("score"),
+            as_on_date=compliance_data.get("as_on_date"),
+            total_penalty_exposure_inr=compliance_data.get("total_penalty_exposure_inr"),
             evaluated_rules=compliance_data.get("evaluated_rules", []),
-            passed_rules=compliance_data.get("passed_rules", [])
+            passed_rules=compliance_data.get("passed_rules", []),
+            needs_review=compliance_data.get("needs_review", []),
+            exempted=compliance_data.get("exempted", []),
+            llm_verification_status=status,
+            llm_verification_message=message,
+            llm_verification_references=references
         )
         db.add(result)
         
@@ -160,7 +193,7 @@ async def save_compliance_result(db: AsyncSession, inspection_id: uuid.UUID, com
         logger.info(f"Saved ComplianceResult with {len(violations)} violations for inspection {inspection_id}")
     except Exception as e:
         await db.rollback()
-        logger.error(f"Failed to save ComplianceResult: {str(e)}")
+        logger.error(f"Failed to save ComplianceResult: {e!s}")
         raise PackWiseException(
             message="Database error while saving compliance result.",
             code="DATABASE_ERROR",
@@ -173,7 +206,10 @@ async def get_inspection(db: AsyncSession, inspection_id: uuid.UUID) -> Inspecti
     Raises a 404 PackWiseException if not found.
     """
     try:
-        stmt = select(Inspection).options(selectinload(Inspection.images)).where(Inspection.id == inspection_id)
+        stmt = select(Inspection).options(
+            selectinload(Inspection.images),
+            selectinload(Inspection.extracted_product)
+        ).where(Inspection.id == inspection_id)
         result = await db.execute(stmt)
         inspection = result.scalars().first()
         
@@ -184,7 +220,7 @@ async def get_inspection(db: AsyncSession, inspection_id: uuid.UUID) -> Inspecti
     except PackWiseException:
         raise
     except Exception as e:
-        logger.error(f"Failed to retrieve inspection {inspection_id}: {str(e)}")
+        logger.error(f"Failed to retrieve inspection {inspection_id}: {e!s}")
         raise PackWiseException(message="Database error while retrieving inspection.", code="DATABASE_ERROR", status_code=500) from e
 
 async def get_ocr_result(db: AsyncSession, inspection_id: uuid.UUID) -> OCRResult:
@@ -207,7 +243,7 @@ async def get_ocr_result(db: AsyncSession, inspection_id: uuid.UUID) -> OCRResul
     except PackWiseException:
         raise
     except Exception as e:
-        logger.error(f"Failed to retrieve OCR for inspection {inspection_id}: {str(e)}")
+        logger.error(f"Failed to retrieve OCR for inspection {inspection_id}: {e!s}")
         raise PackWiseException(message="Database error while retrieving OCR.", code="DATABASE_ERROR", status_code=500) from e
 
 async def get_compliance_result(db: AsyncSession, inspection_id: uuid.UUID) -> ComplianceResult:
@@ -230,6 +266,6 @@ async def get_compliance_result(db: AsyncSession, inspection_id: uuid.UUID) -> C
     except PackWiseException:
         raise
     except Exception as e:
-        logger.error(f"Failed to retrieve compliance for inspection {inspection_id}: {str(e)}")
+        logger.error(f"Failed to retrieve compliance for inspection {inspection_id}: {e!s}")
         raise PackWiseException(message="Database error while retrieving compliance.", code="DATABASE_ERROR", status_code=500) from e
 

@@ -23,7 +23,7 @@
 
 - id: LMPC-R6-FOOD-FSSAI-FLAG
   rule_ref: "Rule 6, Explanation III"
-  title: "Food category — cross-check against FSSAI labelling rules"
+  title: "FSSAI Licence Number"
   category: mandatory_declaration
   description: "Informational flag for food products — recommend a separate FSSAI check."
   default_severity: minor

@@ -1,11 +1,23 @@
-import pytest
 import uuid
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.inspection_service import create_inspection, get_inspection, get_ocr_result, get_compliance_result
-from app.database.models import Inspection, Image, InspectionStatus, OCRResult, ComplianceResult
 from app.core.exceptions import PackWiseException
+from app.database.models import (
+    Image,
+    Inspection,
+    InspectionStatus,
+    OCRResult,
+)
+from app.services.inspection_service import (
+    create_inspection,
+    get_compliance_result,
+    get_inspection,
+    get_ocr_result,
+)
+
 
 @pytest.fixture
 def mock_db_session():
@@ -32,20 +44,25 @@ async def test_create_inspection_success(mock_db_session):
     4. Transaction is committed
     """
     storage_paths = ["uploads/test_uuid1.png", "uploads/test_uuid2.png"]
-    
-    # Execute service
-    inspection = await create_inspection(
-        db=mock_db_session,
-        storage_paths=storage_paths
-    )
-    
-    # Assertions
-    assert isinstance(inspection, Inspection)
-    assert isinstance(inspection.id, uuid.UUID)
-    assert inspection.status == InspectionStatus.CREATED.value
-    
-    # Verify session calls
-    assert mock_db_session.add.call_count == 3
+    # Mock get_inspection since we're only testing create_inspection
+    with patch("app.services.inspection_service.get_inspection", new_callable=AsyncMock) as mock_get:
+        async def mock_get_inspection(db, inspection_id):
+            return Inspection(id=inspection_id, status=InspectionStatus.CREATED.value)
+        mock_get.side_effect = mock_get_inspection
+        
+        # Execute service
+        inspection = await create_inspection(
+            db=mock_db_session,
+            storage_paths=storage_paths
+        )
+        
+        # Assertions
+        assert isinstance(inspection, Inspection)
+        assert isinstance(inspection.id, uuid.UUID)
+        assert inspection.status == InspectionStatus.CREATED.value
+        
+        # Verify session calls
+        assert mock_db_session.add.call_count == 3
     
     # Extract the added models
     added_objects = [call[0][0] for call in mock_db_session.add.call_args_list]

@@ -1,7 +1,10 @@
 import os
+
 from alembic.config import Config
 from alembic.script import ScriptDirectory
+
 from app.database.models import Base
+
 
 def test_alembic_configuration_exists():
     """Verify that alembic.ini and the alembic directory exist."""

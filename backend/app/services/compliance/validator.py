@@ -14,7 +14,8 @@ tests -- it's normalised to {"value": v, "confidence": 1.0, "bbox": None}.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field as dc_field
+from dataclasses import dataclass
+from dataclasses import field as dc_field
 from datetime import date
 
 from .loader import load_exemptions, load_rules
@@ -42,34 +43,42 @@ def _normalise(raw_fields: dict) -> dict:
 
 def _field_present_non_empty(values: dict, rule: RuleSchema) -> tuple[bool, str, str]:
     value = str(values.get(rule.field) or "").strip()
-    if value:
-        return True, value, f"'{rule.field}' is present."
-    return False, "(missing)", f"Required field '{rule.field}' was not found on the label."
+    if value and value.lower() not in ("unavailable", "none", "n/a", "not found", "null", "not detected"):
+        return True, value, f"A {rule.title} declaration was detected on the label."
+    return False, "Not detected", f"The package appears to require a {rule.title}, but it could not be extracted from the label."
 
 
 def _field_present_numeric_positive(values: dict, rule: RuleSchema) -> tuple[bool, str, str]:
-    raw = values.get(rule.field)
+    raw = str(values.get(rule.field) or "").strip()
+    if not raw or raw.lower() in ("unavailable", "none", "n/a", "not found", "null", "not detected"):
+        return False, "Not detected", f"The package appears to require a {rule.title}, but it could not be extracted."
+    
+    match = re.search(r"(\d+(?:\.\d+)?)", raw)
+    if not match:
+        return False, raw, f"The {rule.title} must contain a positive number; found '{raw}'."
+        
     try:
-        value = float(raw)
+        value = float(match.group(1))
     except (TypeError, ValueError):
-        return False, str(raw), f"'{rule.field}' must be a positive number; found '{raw}'."
+        return False, raw, f"The {rule.title} must be a positive number; found '{raw}'."
+        
     if value > 0:
-        return True, str(value), f"'{rule.field}' = {value}, a valid positive value."
-    return False, str(value), f"'{rule.field}' must be greater than zero; found {value}."
+        return True, f"{value:g}", f"A {rule.title} declaration was detected and is a valid positive value."
+    return False, f"{value:g}", f"The {rule.title} must be greater than zero; found {value}."
 
 
 def _field_present_date(values: dict, rule: RuleSchema) -> tuple[bool, str, str]:
     raw = str(values.get(rule.field) or "").strip()
     if not raw:
-        return False, "(missing)", f"Required date field '{rule.field}' was not found."
+        return False, "Not detected", f"The package appears to require a {rule.title}, but it could not be extracted from the label."
     if (
         re.match(r"^(0[1-9]|1[0-2])/\d{4}$", raw)
         or re.match(r"^[A-Za-z]+\s\d{4}$", raw)
         or re.match(r"^\d{4}$", raw)
     ):
-        return True, raw, f"'{rule.field}' = '{raw}', a recognisable month/year format."
+        return True, raw, f"A {rule.title} was detected in a recognisable format."
     return False, raw, (
-        f"'{rule.field}' = '{raw}' is not in a recognisable month/year format "
+        f"The detected {rule.title} '{raw}' is not in a recognisable format "
         f"(expected e.g. '03/2026' or 'March 2026')."
     )
 
@@ -79,18 +88,18 @@ def _net_quantity_standard_unit(values: dict, rule: RuleSchema) -> tuple[bool, s
     unit = str(values.get("net_quantity_unit") or "").strip().lower()
     allowed = rule.params.get("allowed_units", [])
     if qty is None or str(qty).strip() == "":
-        return False, "(missing)", "Net quantity value is missing."
+        return False, "Not detected", "The package appears to require a Net Quantity declaration, but it could not be extracted."
     try:
         qty_val = float(qty)
     except (TypeError, ValueError):
-        return False, str(qty), f"Net quantity '{qty}' is not numeric."
+        return False, str(qty), f"The detected Net Quantity '{qty}' is not a valid number."
     if qty_val <= 0:
-        return False, str(qty), f"Net quantity must be positive; found {qty_val}."
+        return False, str(qty), f"The Net Quantity must be positive; found {qty_val}."
     if unit not in allowed:
         return False, f"{qty_val} {unit}", (
-            f"Declared unit '{unit}' is not a standard unit under Rule 8 (expected one of {allowed})."
+            f"The declared unit '{unit}' is not a standard unit (expected one of {allowed})."
         )
-    return True, f"{qty_val} {unit}", f"Net quantity declared as {qty_val} {unit}, a standard unit."
+    return True, f"{qty_val} {unit}", "A Net Quantity was declared correctly in standard units."
 
 
 def _language_or_check(values: dict, rule: RuleSchema) -> tuple[bool, str, str]:
@@ -367,6 +376,7 @@ def run_compliance_check(
             result.passed_checks.append(v)
         elif status == "needs_review":
             v.suggested_fix = _suggest_fix(rule, found)
+            actual_deduction += (weight * 0.5)
             result.needs_review_checks.append(v)
         else:
             offence_count = offence_history.get(rule.id, 0)
@@ -376,7 +386,8 @@ def run_compliance_check(
             actual_deduction += weight
             result.violations.append(v)
 
-    result.score = max(0, round(100 - (actual_deduction / max_deduction) * 100)) if max_deduction else 100
+    total_evaluated_checks = len(result.passed_checks) + len(result.needs_review_checks) + len(result.violations)
+    result.score = round((len(result.passed_checks) / total_evaluated_checks) * 100) if total_evaluated_checks > 0 else 100
     result.total_penalty_exposure_inr = total_penalty
 
     if result.violations:

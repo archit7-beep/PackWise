@@ -12,9 +12,10 @@ Pipeline:
   4. CLAHE Adaptive Contrast Enhancement (Fixes faded/low-light packaging)
 """
 
-import numpy as np
 import cv2
+import numpy as np
 from PIL import Image, ImageOps
+
 from app.core.logging import logger
 
 
@@ -135,6 +136,10 @@ def preprocess_image(image_path: str, auto_deskew: bool = True) -> np.ndarray:
 
     # 1. Correct EXIF phone camera rotation
     img = _apply_exif_rotation(img)
+
+    # 1.5 Resize image to speed up OCR (max 1000px dimension)
+    # 1500px was tested but made OCR 3x slower (99s vs 31s). Not worth it.
+    img.thumbnail((1000, 1000), Image.Resampling.LANCZOS)
 
     # 2. Normalize color mode to RGB
     img = _to_rgb(img)

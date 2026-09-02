@@ -1,15 +1,24 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional, List
 import uuid
 
-from app.database.connection import get_db
-from app.schemas.inspection import InspectionResponse, OCRResultResponse, ComplianceResultResponse
-from app.services.storage_service import StorageService
-from app.services.inspection_service import create_inspection, get_inspection, get_ocr_result, get_compliance_result
-from app.services.pipeline_service import pipeline_service
+from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.exceptions import PackWiseException
 from app.core.logging import logger
+from app.database.connection import get_db
+from app.schemas.inspection import (
+    ComplianceResultResponse,
+    InspectionResponse,
+    OCRResultResponse,
+)
+from app.services.inspection_service import (
+    create_inspection,
+    get_compliance_result,
+    get_inspection,
+    get_ocr_result,
+)
+from app.services.pipeline_service import pipeline_service
+from app.services.storage_service import StorageService
 
 router = APIRouter()
 storage_service = StorageService()
@@ -20,7 +29,7 @@ ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
 @router.post("", response_model=InspectionResponse, status_code=status.HTTP_201_CREATED)
 async def upload_inspection_images(
     background_tasks: BackgroundTasks,
-    files: List[UploadFile] = File(...),
+    files: list[UploadFile] = File(...),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -101,7 +110,13 @@ async def get_inspection_endpoint(
     Retrieve an inspection by its ID.
     """
     inspection = await get_inspection(db, inspection_id)
-    return inspection
+    
+    # Manually build response to map extracted_product.data to product_data
+    response_data = InspectionResponse.model_validate(inspection).model_dump()
+    if inspection.extracted_product:
+        response_data["product_data"] = inspection.extracted_product.data
+        
+    return response_data
 
 @router.get("/{inspection_id}/ocr", response_model=OCRResultResponse)
 async def get_inspection_ocr_endpoint(

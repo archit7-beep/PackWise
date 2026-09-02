@@ -1,10 +1,10 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Overview from "@/components/Overview";
-import ComplianceSection from "@/components/ComplianceSection";
-import AlertsSection from "@/components/AlertsSection";
+import ComplianceShowcase from "@/components/ComplianceShowcase";
 import Manifesto from "@/components/Manifesto";
 import AccuracySection from "@/components/AccuracySection";
+import OCRSection from "@/components/OCRSection";
 import FAQSection from "@/components/FAQSection";
 import Footer from "@/components/Footer";
 
@@ -25,12 +25,10 @@ export default function Home() {
         <Overview />
 
         {/* 3. Compliance — FSSAI / Legal Metrology */}
-        <div id="compliance" style={{ padding: "0 var(--pad)" }}>
-          <ComplianceSection />
-        </div>
+        <ComplianceShowcase />
 
-        {/* 4. Alerts — Violation alert cards */}
-        <AlertsSection />
+        {/* 4. OCR Engine */}
+        <OCRSection />
 
         {/* 5. Manifesto — Large editorial text */}
         <Manifesto />

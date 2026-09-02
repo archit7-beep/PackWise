@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from datetime import date
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -40,7 +40,7 @@ class PenaltyTiers(BaseModel):
     second_offence_max: int = 50_000
     subsequent_offence_min: int = 50_000
     subsequent_offence_max: int = 100_000
-    subsequent_imprisonment_months_max: Optional[int] = 12
+    subsequent_imprisonment_months_max: int | None = 12
     basis: str = "Section 36(1), LM Act 2009"
 
 
@@ -60,23 +60,23 @@ class RuleSchema(BaseModel):
     applies_to_categories: list[str] = Field(default_factory=lambda: ["all"])
     exemption_refs: list[str] = Field(default_factory=list)
     effective_from: date
-    effective_until: Optional[date] = None
+    effective_until: date | None = None
     validation_type: str
-    field: Optional[str] = None
-    condition: Optional[str] = None
+    field: str | None = None
+    condition: str | None = None
     params: dict[str, Any] = Field(default_factory=dict)
     required_fields: list[str] = Field(default_factory=list)
     excluded_fields: list[str] = Field(default_factory=list)
     confidence_threshold: float = 0.6
     penalty_tiers: PenaltyTiers = Field(default_factory=PenaltyTiers)
-    fix_example: Optional[str] = None
-    act_basis: Optional[str] = None
-    amendment_ref: Optional[str] = None
-    notes: Optional[str] = None
+    fix_example: str | None = None
+    act_basis: str | None = None
+    amendment_ref: str | None = None
+    notes: str | None = None
     test_cases: list[RuleTestCase] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def _check_validation_type_known(self) -> "RuleSchema":
+    def _check_validation_type_known(self) -> RuleSchema:
         if self.validation_type not in KNOWN_VALIDATION_TYPES:
             raise ValueError(
                 f"Rule {self.id} references unknown validation_type "
@@ -90,8 +90,8 @@ class ExemptionCondition(BaseModel):
     key: str
     description: str
     exclude_categories: list[str] = Field(default_factory=list)
-    amendment_ref: Optional[str] = None
-    effective_from: Optional[date] = None
+    amendment_ref: str | None = None
+    effective_from: date | None = None
     override_threshold_kg: dict[str, float] = Field(default_factory=dict)
 
 

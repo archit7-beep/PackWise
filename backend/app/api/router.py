@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from app.api.routes import health, inspections
 
 api_router = APIRouter()

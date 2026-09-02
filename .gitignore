@@ -89,3 +89,5 @@ scratch/
 brain/
 audit.py
 *.log
+
+backend/uploads/

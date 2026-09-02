@@ -3,11 +3,11 @@ import { motion } from "framer-motion";
 import { EASE } from "@/lib/motion";
 
 const FAQS = [
-  { q: "Does PackWise connect to any government database?", a: "Not currently. Compliance decisions are made by our deterministic rule engine, which encodes Legal Metrology and FSSAI labelling requirements. No live government API is required — the rules are baked in." },
+  { q: "Does PackWise connect to any government database?", a: "No — and that's by design. All 18 compliance rules are encoded directly into our engine from the Legal Metrology (Packaged Commodities) Rules, 2011 and FSSAI labelling regulations. We don't rely on any external API or live government feed, so your scans work offline and results are instant." },
   { q: "How accurate is the OCR extraction?", a: "Our pipeline achieves ~97% average field confidence on clearly printed product labels using EasyOCR + Google GenAI. Confidence scores are shown for every extracted field so you always know how reliable the output is." },
   { q: "What happens to the product image after scanning?", a: "Images are analysed immediately upon upload. Only the structured extraction result (JSON) is stored. Raw images are not retained. Your packaging data never leaves the extraction pipeline." },
   { q: "Which products does PackWise support?", a: "Any packaged product with a visible label — food, beverages, cosmetics, pharmaceutical packaging. Designed for FSSAI and Legal Metrology Act requirements in India." },
-  { q: "Can I export the compliance report?", a: "Yes. Every scan produces a structured JSON report that can be exported as PDF or consumed via our API with full audit trail integration." },
+  { q: "Can I export the compliance report?", a: "This feature is currently in progress and will be available in the next update. You'll be able to export structured compliance reports as PDF with full audit trail integration." },
   { q: "Is the compliance verdict final or an estimate?", a: "PASS/FAIL verdicts are deterministic — based on explicit rules, not LLM inference. Each verdict cites the exact regulation checked (e.g., FSSAI Reg. 2.2.2, Legal Metrology Rule 6(1))." },
 ];
 

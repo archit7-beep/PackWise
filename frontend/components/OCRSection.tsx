@@ -2,27 +2,14 @@
 import { motion } from "framer-motion";
 import { EASE } from "@/lib/motion";
 
-const RAW_OCR = `MRP Rs 68
-Net Qty 1L
-Mfd: 28/08/2026
-Best Before: 31/08/2026
-FSSAI Lic No: 10013022000357
-Ingredients: Buffalo Milk
-Energy 117 kcal
-Protein 3.8g  Fat 6.5g
-Carbs 4.9g`;
-
-const STRUCTURED = {
-  product_name: "Amul Buffalo Milk",
-  brand: "Amul",
-  mrp: { value: 68, unit: "INR", confidence: 0.98 },
-  net_quantity: { value: 1, unit: "L", confidence: 0.97 },
-  mfd: { value: "2026-08-28", confidence: 0.96 },
-  best_before: { value: "2026-08-31", confidence: 0.96 },
-  fssai_license: { value: "10013022000357", confidence: 0.99 },
-};
-
 export default function OCRSection() {
+  const rawText = `For Feedback query Write to: cannectim Isweets com Customer Cle 1800 - 313 4353 (10am 6pm Monday to Friday) Customer Care Address: 129, 3rd Floor; Hullmavu, Bannerghatta Road, Bangalore 560076. Karnataka; INDIA
+LAL
+Proprietary tood (Ready to Eat Namkeen) Intredients; Peanuts (80r31, Edible Vcgctable OIl (Palmolcin), Bengal Gram Flour Besania Nal Caniee Butter Gnce, [odized Haeen chl111; Dry Moneo Powder chi Raeubrtor (1NS 330), uurmerc; Black Kti Dlack Salt Dried Ginger Porider cumIn Ecc Gmnmon; Gnancn Gloyi eaves Asafotndz Garome Gccandch Nunmers Mlersy
+AdvIce: Centain Peanuts- Made [ that Processes Peanuts, Mustard; Nuts; Mik Wncat Sesame and Soy: Lnn Earbonal Per 100} Lenni Eomton (e2) [xtlel Aettr (
+Kecp Tour @lyClean
+KEEP AWAY FROM Direct SuklIght: STORE COOLAND DRY PLACE. ONCE OPENED STORE NR TIght GONTTAlNee`;
+
   return (
     <section id="ocr" style={{ padding: "clamp(34px, 6vh, 70px) var(--pad)" }}>
       <div
@@ -44,7 +31,7 @@ export default function OCRSection() {
         <div
           style={{
             position: "relative", zIndex: 1,
-            display: "grid", gridTemplateColumns: "1.15fr 0.85fr",
+            display: "grid", gridTemplateColumns: "1fr 1fr",
             gap: "clamp(30px, 5vw, 70px)", alignItems: "center",
           }}
           className="ai-grid"
@@ -77,7 +64,7 @@ export default function OCRSection() {
               style={{ color: "rgba(244,244,246,0.7)", fontSize: "clamp(16px, 1.2vw, 20px)", margin: "26px 0 0", maxWidth: 480 }}
             >
               EasyOCR reads the image. Google GenAI extracts every field with
-              confidence scoring. Only the structured JSON is stored — no raw image data retained.
+              confidence scoring.
             </motion.p>
             <motion.div
               initial={{ opacity: 0 }}
@@ -86,7 +73,10 @@ export default function OCRSection() {
               transition={{ delay: 0.35, duration: 0.6 }}
               style={{ display: "flex", gap: 44, marginTop: 40 }}
             >
-              {[{ stat: "97%", label: "Avg. OCR confidence" }, { stat: "<2s", label: "End-to-end extraction" }].map(({ stat, label }) => (
+              {[
+                { stat: "86%", label: "Avg. OCR confidence" },
+                { stat: "76", label: "Regions Extracted" }
+              ].map(({ stat, label }) => (
                 <div key={label}>
                   <b style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: "clamp(34px, 4vw, 54px)", color: "var(--orange)", display: "block", letterSpacing: "-0.04em" }}>{stat}</b>
                   <span style={{ color: "rgba(244,244,246,0.5)", fontSize: 14 }}>{label}</span>
@@ -95,39 +85,26 @@ export default function OCRSection() {
             </motion.div>
           </div>
 
-          {/* Right: terminal */}
+          {/* Right side Terminal */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
+            initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.15, duration: 0.8, ease: EASE }}
+            transition={{ delay: 0.4, duration: 0.7, ease: EASE }}
+            style={{ position: "relative", zIndex: 2 }}
           >
-            <div style={{ background: "#0d1117", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, overflow: "hidden", boxShadow: "0 20px 60px -20px rgba(0,0,0,0.8)" }}>
-              {/* Terminal header */}
-              <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ background: "#0d1117", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+              <div style={{ padding: "10px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 8 }}>
                 {["#FF5F57", "#FEBC2E", "#28C840"].map((c) => (
-                  <div key={c} style={{ width: 12, height: 12, borderRadius: "50%", background: c }} />
+                  <div key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />
                 ))}
-                <span style={{ marginLeft: 8, fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "monospace" }}>nlp_engine.py — EasyOCR</span>
+                <span style={{ marginLeft: 8, fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "monospace" }}>nlp_engine.py — EasyOCR</span>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
-                <div style={{ padding: 16, borderRight: "1px solid rgba(255,255,255,0.06)" }}>
-                  <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.3)", letterSpacing: "0.08em", textTransform: "uppercase" }}>RAW OCR</p>
-                  <pre style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)", fontFamily: "monospace", whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{RAW_OCR}</pre>
-                </div>
-                <div style={{ padding: 16 }}>
-                  <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 600, color: "#22c55e", letterSpacing: "0.08em", textTransform: "uppercase" }}>STRUCTURED JSON</p>
-                  <pre style={{ margin: 0, fontSize: 11, fontFamily: "monospace", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
-                    {Object.entries(STRUCTURED).map(([key, val]) => (
-                      <span key={key}>
-                        <span style={{ color: "#79c0ff" }}>&quot;{key}&quot;</span>
-                        <span style={{ color: "rgba(255,255,255,0.5)" }}>: </span>
-                        <span style={{ color: "#a5d6ff" }}>{JSON.stringify(val)}</span>
-                        {"\n"}
-                      </span>
-                    ))}
-                  </pre>
-                </div>
+              <div style={{ padding: 20 }}>
+                <p style={{ margin: "0 0 12px", fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em", textTransform: "uppercase" }}>RAW OCR TEXT</p>
+                <pre style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.7)", fontFamily: "monospace", whiteSpace: "pre-wrap", lineHeight: 1.6, maxHeight: 220, overflowY: "auto" }}>
+                  {rawText}
+                </pre>
               </div>
             </div>
           </motion.div>

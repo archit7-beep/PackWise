@@ -1,6 +1,5 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
 
+from pydantic import BaseModel, Field
 
 # ---------------------------------------------------------------------------
 # Member 2 — OCR Output Contract
@@ -16,7 +15,7 @@ class OCRRegion(BaseModel):
     """
     text: str                           # The recognised text string
     confidence: float = Field(ge=0.0, le=1.0)  # OCR confidence [0, 1]
-    bbox: List[int] = Field(min_length=4, max_length=4)
+    bbox: list[int] = Field(min_length=4, max_length=4)
     # bbox format: [x1, y1, x2, y2] — top-left to bottom-right pixel coords
 
 
@@ -26,65 +25,68 @@ class OCRResult(BaseModel):
     This is the return type of ocr_service.extract_text_from_images().
     """
     full_text: str                      # All regions joined — fed to Member 3 NLP
-    regions: List[OCRRegion]            # Individual regions — stored as JSONB
+    regions: list[OCRRegion]            # Individual regions — stored as JSONB
 
 
 
 class MetrologyData(BaseModel):
     # 1. Product Identity
-    brand_name: Optional[str] = None
-    generic_name_of_commodity: Optional[str] = None
+    brand_name: str | None = None
+    generic_name_of_commodity: str | None = None
     
     # 2. Price and Quantity
-    mrp: Optional[float] = None
-    mrp_height_px: Optional[int] = None
-    net_quantity: Optional[str] = None
-    net_quantity_height_px: Optional[int] = None
+    mrp: str | None = None
+    mrp_evidence: str | None = None
+    mrp_height_px: int | None = None
+    net_quantity: str | None = None
+    net_quantity_height_px: int | None = None
     
     # 3. Required Dates
-    mfg_date: Optional[str] = None
-    packing_date: Optional[str] = None
-    import_date: Optional[str] = None
-    expiry_date: Optional[str] = None
+    mfg_date: str | None = None
+    packing_date: str | None = None
+    import_date: str | None = None
+    expiry_date: str | None = None
+    best_before: str | None = None
+    best_before_evidence: str | None = None
     
     # 4. Required Entities
-    manufacturer_details: Optional[str] = None
-    packer_details: Optional[str] = None
-    importer_details: Optional[str] = None
+    manufacturer_details: str | None = None
+    packer_details: str | None = None
+    importer_details: str | None = None
     
     # 5. Other Prescribed Declarations
-    country_of_origin: Optional[str] = None
-    consumer_care_contact: Optional[str] = None
+    country_of_origin: str | None = None
+    consumer_care_contact: str | None = None
 
 class NutritionData(BaseModel):
-    serving_size: Optional[str] = None
-    servings_per_pack: Optional[str] = None
-    energy_kcal: Optional[float] = None
-    protein_g: Optional[float] = None
-    carbohydrates_g: Optional[float] = None
-    total_sugars_g: Optional[float] = None
-    added_sugars_g: Optional[float] = None
-    total_fat_g: Optional[float] = None
-    saturated_fat_g: Optional[float] = None
-    trans_fat_g: Optional[float] = None
-    cholesterol_mg: Optional[float] = None
-    sodium_mg: Optional[float] = None
-    dietary_fibre_g: Optional[float] = None
+    serving_size: str | None = None
+    servings_per_pack: str | None = None
+    energy_kcal: float | None = None
+    protein_g: float | None = None
+    carbohydrates_g: float | None = None
+    total_sugars_g: float | None = None
+    added_sugars_g: float | None = None
+    total_fat_g: float | None = None
+    saturated_fat_g: float | None = None
+    trans_fat_g: float | None = None
+    cholesterol_mg: float | None = None
+    sodium_mg: float | None = None
+    dietary_fibre_g: float | None = None
 
 class PackagingData(BaseModel):
-    fssai_license_number: Optional[str] = None
-    is_vegetarian: Optional[bool] = None
-    packaging_material_declared: Optional[str] = None
-    recycling_code: Optional[str] = None
-    disposal_warning: Optional[str] = None
+    fssai_license_number: str | None = None
+    is_vegetarian: bool | None = None
+    packaging_material_declared: str | None = None
+    recycling_code: str | None = None
+    disposal_warning: str | None = None
 
 class ExtractedProductData(BaseModel):
     metrology: MetrologyData
-    nutrition: Optional[NutritionData] = None
-    packaging: Optional[PackagingData] = None
+    nutrition: NutritionData | None = None
+    packaging: PackagingData | None = None
     
     confidence_score: float = 0.0
-    raw_ocr_length: Optional[int] = None
-    extracted_fields_count: Optional[int] = None
-    total_supported_fields: Optional[int] = None
-    warnings: List[str] = []
+    raw_ocr_length: int | None = None
+    extracted_fields_count: int | None = None
+    total_supported_fields: int | None = None
+    warnings: list[str] = []

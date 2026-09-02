@@ -1,8 +1,10 @@
 "use client";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Navbar() {
   const navRef = useRef<HTMLElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const toggleTheme = () => {
     const current = document.documentElement.getAttribute("data-theme");
@@ -30,12 +32,12 @@ export default function Navbar() {
         <nav className="nav__links hidden md:flex items-center gap-7 text-sm font-medium text-[var(--muted)]" aria-label="Primary">
           <a href="/#overview" className="hover:text-[var(--ink)] transition-colors">Overview</a>
           <a href="/#compliance" className="hover:text-[var(--ink)] transition-colors">Compliance</a>
-          <a href="/#nutrition" className="hover:text-[var(--ink)] transition-colors">Nutrition</a>
+          <a href="/nutrition" className="hover:text-[var(--ink)] transition-colors">Nutrition</a>
           <a href="/dashboard" className="hover:text-[var(--ink)] transition-colors font-semibold text-[var(--peri-ink)]">Dashboard</a>
           <a href="/#faq" className="hover:text-[var(--ink)] transition-colors">FAQ</a>
         </nav>
 
-        {/* Theme Toggle — spaced with the exact same gap-7 as the nav links */}
+        {/* Theme Toggle */}
         <button
           className="theme-toggle w-9 h-9 rounded-full border border-[var(--line)] flex items-center justify-center text-sm text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--bg-2)] transition-all cursor-pointer"
           onClick={toggleTheme}
@@ -48,7 +50,36 @@ export default function Navbar() {
         <a className="btn btn--solid btn--sm whitespace-nowrap" href="/#top" id="nav-cta">
           <span>Start Scanning</span>
         </a>
+
+        {/* Mobile Hamburger Button */}
+        <button
+          className="md:hidden flex items-center justify-center w-9 h-9 rounded-full border border-[var(--line)] text-[var(--ink)] hover:bg-[var(--bg-2)] transition-colors"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle mobile menu"
+        >
+          {mobileMenuOpen ? "✕" : "☰"}
+        </button>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="absolute top-[calc(100%+12px)] left-0 w-full backdrop-blur-xl border border-[var(--line)] shadow-xl rounded-3xl p-6 flex flex-col gap-5 text-center z-40 md:hidden"
+            style={{ background: "var(--bg)" }}
+          >
+            <a href="/#overview" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium text-[var(--ink)]">Overview</a>
+            <a href="/#compliance" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium text-[var(--ink)]">Compliance</a>
+            <a href="/nutrition" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium text-[var(--ink)]">Nutrition</a>
+            <a href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-[var(--peri-ink)]">Dashboard</a>
+            <a href="/#faq" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium text-[var(--ink)]">FAQ</a>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

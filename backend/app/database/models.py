@@ -1,10 +1,13 @@
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Text, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from sqlalchemy import Column, DateTime, Float, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
+
 from app.database.connection import Base
+
 
 def utc_now():
     return datetime.now(timezone.utc)
@@ -70,6 +73,7 @@ class ExtractedProduct(Base):
     inspection_id = Column(UUID(as_uuid=True), ForeignKey("inspections.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
     
     data = Column(JSONB, nullable=False) # Pydantic model serialized output
+    original_nlp_data = Column(JSONB, nullable=True) # Unrefined NLP payload for fallback/provenance
     confidence_score = Column(Float, nullable=True)
     
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
@@ -85,8 +89,18 @@ class ComplianceResult(Base):
     inspection_id = Column(UUID(as_uuid=True), ForeignKey("inspections.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
     
     status = Column(String, nullable=False)
+    score = Column(Float, nullable=True)
+    as_on_date = Column(String, nullable=True)
+    total_penalty_exposure_inr = Column(Float, nullable=True)
+    
     evaluated_rules = Column(JSONB, nullable=False)
     passed_rules = Column(JSONB, nullable=False)
+    needs_review = Column(JSONB, nullable=True)
+    exempted = Column(JSONB, nullable=True)
+    
+    llm_verification_status = Column(String, nullable=True) # e.g. AGREE, DISAGREE, UNVERIFIED
+    llm_verification_message = Column(Text, nullable=True)
+    llm_verification_references = Column(JSONB, nullable=True)
     
     evaluated_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 

@@ -1,92 +1,51 @@
 import pytest
+
 from app.services.nlp_service import nlp_service
-from app.core.exceptions import PackWiseException
-from app.core.config import settings
-from pydantic import ValidationError
+
 
 @pytest.fixture
 def anyio_backend():
     return 'asyncio'
 
 @pytest.mark.anyio
-async def test_nlp_missing_api_key(monkeypatch):
-    """Test that missing API key raises NLP_CONFIG_ERROR"""
-    monkeypatch.setattr(settings, "GEMINI_API_KEY", "")
+async def test_deterministic_mrp_normalization():
+    """Test deterministic extraction properly extracts and normalizes MRP."""
+    test_cases = [
+        ("MRP Rs. 199", "199", "MRP Rs. 199"),
+        ("MRP ₹199", "199", "MRP ₹199"),
+        ("MRPRs 199", "199", "MRPRs 199"),
+        ("MRP 199/-", "199", "MRP 199/-"),
+        ("Net Qty 500g\nMRP Rs. 199\nSugar 28g", "199", "MRP Rs. 199")
+    ]
     
-    with pytest.raises(PackWiseException) as exc_info:
-        await nlp_service.extract_from_ocr("Sample OCR text")
-        
-    assert exc_info.value.code == "NLP_CONFIG_ERROR"
-    assert exc_info.value.status_code == 500
+    for case, exp_val, exp_evid in test_cases:
+        res = await nlp_service.extract_from_ocr(case)
+        assert res.metrology.mrp == exp_val
+        assert res.metrology.mrp_evidence == exp_evid
 
 @pytest.mark.anyio
-async def test_nlp_dependency_missing(monkeypatch):
-    """Test that missing google-genai dependency raises NLP_DEPENDENCY_ERROR"""
-    monkeypatch.setattr(settings, "GEMINI_API_KEY", "fake_key")
+async def test_deterministic_bb_normalization():
+    """Test deterministic extraction properly extracts and normalizes Best Before."""
+    test_cases_bb = [
+        ("BEST BEFORE 31/12/2026", "31/12/2026"),
+        ("BEST BEFORE: 31-12-2026", "31-12-2026"),
+        ("BEST BEFORE 31.12.2026", "31.12.2026"),
+        ("BEST BEFORE 31 AUG 2026", "31 AUG 2026"),
+        ("BEST BEFORE AUG 2026", "AUG 2026"),
+        ("BEST BEFORE 6 MONTHS FROM MFG", "6 MONTHS FROM MFG"),
+        ("BEST BEFORE 180 DAYS FROM MFG", "180 DAYS FROM MFG"),
+        ("BEST BEFORE6 MONTHS FROM MFG", "6 MONTHS FROM MFG"),
+        ("BEST BEFORE31/12/2026", "31/12/2026")
+    ]
     
-    # We mock sys.modules to simulate missing google dependency if it's not installed
-    import sys
-    monkeypatch.setitem(sys.modules, "google", None)
-    monkeypatch.setitem(sys.modules, "google.genai", None)
-
-    with pytest.raises(PackWiseException) as exc_info:
-        await nlp_service.extract_from_ocr("Sample OCR text")
-        
-    assert exc_info.value.code == "NLP_DEPENDENCY_ERROR"
-    assert exc_info.value.status_code == 500
-
-@pytest.mark.anyio
-async def test_nlp_api_failure(monkeypatch):
-    """Test that an API failure (like bad key) raises NLP_API_FAILURE"""
-    monkeypatch.setattr(settings, "GEMINI_API_KEY", "fake_key")
-    
-    # If the dependency IS installed but the key is bad, it should raise API_FAILURE
-    # If it's NOT installed, this test would theoretically hit DEPENDENCY_ERROR.
-    # To reliably test API failure, we mock the sync function to just raise an Exception
-    def mock_extract_sync(*args, **kwargs):
-        raise PackWiseException(message="Google API unavailable", code="NLP_API_FAILURE", status_code=502)
-    
-    monkeypatch.setattr(nlp_service, "_extract_metrology_sync", mock_extract_sync)
-
-    with pytest.raises(PackWiseException) as exc_info: 
-        await nlp_service.extract_from_ocr("Sample OCR text")
-    
-    assert exc_info.value.code == "NLP_API_FAILURE"
+    for case, exp_val in test_cases_bb:
+        res = await nlp_service.extract_from_ocr(case)
+        assert res.metrology.best_before == exp_val
 
 @pytest.mark.anyio
-async def test_nlp_validation_error(monkeypatch):
-    """Test that if the LLM returns completely wrong data types, it raises NLP_VALIDATION_ERROR"""
-    monkeypatch.setattr(settings, "GEMINI_API_KEY", "fake_key")
-    
-    # Mock the LLM returning completely invalid data (e.g. dict for a string field, string for a float)
-    def mock_extract_sync_invalid(*args, **kwargs):
-        return {
-            "mrp": "This is a string, not a float"
-        }
-    
-    monkeypatch.setattr(nlp_service, "_extract_metrology_sync", mock_extract_sync_invalid)
-
-    with pytest.raises(PackWiseException) as exc_info:
-        await nlp_service.extract_from_ocr("Sample OCR text")
-        
-    assert exc_info.value.code == "NLP_VALIDATION_ERROR"
-
-@pytest.mark.anyio
-async def test_nlp_valid_output_accepted(monkeypatch):
-    """Test that a valid mock LLM response is cleanly parsed into ExtractedProductData"""
-    monkeypatch.setattr(settings, "GEMINI_API_KEY", "fake_key")
-    
-    def mock_extract_sync_valid(*args, **kwargs):
-        return {
-            "brand_name": "Test Brand",
-            "mrp": 50.0,
-            "confidence_score": 0.95
-        }
-    
-    monkeypatch.setattr(nlp_service, "_extract_metrology_sync", mock_extract_sync_valid)
-    
-    result = await nlp_service.extract_from_ocr("Valid raw text")
-    
-    assert result.metrology.brand_name == "Test Brand"
-    assert result.metrology.mrp == 50.0
-    assert result.confidence_score == 0.95
+async def test_deterministic_no_false_positives():
+    """Test deterministic extraction does not invent values from unrelated numbers."""
+    case = "Net Qty 500g\nEnergy 450 kcal\nSugar 28g"
+    res = await nlp_service.extract_from_ocr(case)
+    assert res.metrology.mrp is None
+    assert res.metrology.best_before is None

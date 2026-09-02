@@ -1,10 +1,11 @@
 import os
 import uuid
+
 import aiofiles
 from fastapi import UploadFile
-from typing import Tuple
-from app.core.logging import logger
+
 from app.core.exceptions import PackWiseException
+from app.core.logging import logger
 
 # Temporary MVP configuration for local storage. 
 # IMPORTANT DOCUMENTATION: 
@@ -44,7 +45,7 @@ class StorageService:
             return storage_path
             
         except Exception as e:
-            logger.error(f"Failed to save file to {storage_path}: {str(e)}")
+            logger.error(f"Failed to save file to {storage_path}: {e!s}")
             self.delete_file(storage_path) # Clean up partial file on failure
             raise PackWiseException(
                 message="Failed to persist uploaded image.",
@@ -63,7 +64,7 @@ class StorageService:
                 logger.info(f"Cleaned up file at {storage_path}")
         except Exception as e:
             # We log but do not raise here, as cleanup failures shouldn't crash the rollback itself
-            logger.error(f"Failed to delete file {storage_path} during cleanup: {str(e)}")
+            logger.error(f"Failed to delete file {storage_path} during cleanup: {e!s}")
 
     def _get_extension(self, filename: str | None) -> str:
         if not filename:

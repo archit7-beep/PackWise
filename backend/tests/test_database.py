@@ -1,15 +1,11 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.database.connection import engine, Base, async_session_factory, get_db
+
+from app.database.connection import Base, engine, get_db
 from app.database.models import (
-    Inspection, 
-    Image, 
-    OCRResult, 
-    ExtractedProduct, 
-    ComplianceResult, 
-    ComplianceViolation,
-    InspectionStatus
+    InspectionStatus,
 )
+
 
 def test_models_importable_and_configured():
     """Verify all MVP models are successfully initialized into SQLAlchemy metadata"""

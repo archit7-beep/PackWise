@@ -1,4 +1,0 @@
-# Member 3: ML / NLP Information Extraction Dependencies
-# Python Version: >=3.10
-google-genai>=0.1.1
-pydantic>=2.6.0

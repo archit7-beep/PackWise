@@ -1,12 +1,18 @@
-import pytest
 import uuid
 from datetime import datetime, timezone
-from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.main import app
-from app.database.models import Inspection, InspectionStatus, OCRResult, ComplianceResult
+import pytest
+from fastapi.testclient import TestClient
+
 from app.core.exceptions import PackWiseException
+from app.database.models import (
+    ComplianceResult,
+    Inspection,
+    InspectionStatus,
+    OCRResult,
+)
+from app.main import app
 
 client = TestClient(app)
 
@@ -114,9 +120,52 @@ def test_get_inspection_ocr_not_ready(mock_get_ocr):
 def test_get_inspection_compliance_success(mock_get_compliance):
     fake_id = uuid.uuid4()
     mock_get_compliance.return_value = ComplianceResult(
-        id=uuid.uuid4(), status="PASS", evaluated_rules=[], passed_rules=[], evaluated_at=datetime.now(timezone.utc)
+        id=uuid.uuid4(), status="PASS", evaluated_rules=[], passed_rules=[], needs_review=[], exempted=[], evaluated_at=datetime.now(timezone.utc)
     )
     
     response = client.get(f"/api/v1/inspections/{fake_id}/compliance")
     assert response.status_code == 200
     assert response.json()["status"] == "PASS"
+
+@patch("app.api.routes.inspections.get_compliance_result")
+def test_get_inspection_compliance_with_violations_and_needs_review(mock_get_compliance):
+    fake_id = uuid.uuid4()
+    mock_compliance = ComplianceResult(
+        id=uuid.uuid4(),
+        status="FAIL",
+        evaluated_rules=["RULE_1"],
+        passed_rules=["RULE_2"],
+        needs_review=[
+            {
+                "rule_id": "RULE_3",
+                "rule_name": "Needs Review Rule",
+                "severity": "major",
+                "message": "Needs manual check"
+            }
+        ],
+        exempted=[],
+        evaluated_at=datetime.now(timezone.utc)
+    )
+    
+    from app.database.models import ComplianceViolation
+    # Mocking a real violation object that belongs to the relationship
+    violation = ComplianceViolation(
+        id=uuid.uuid4(),
+        rule_id="RULE_1",
+        rule_name="Failing Rule",
+        severity="critical",
+        message="Violated rule"
+    )
+    mock_compliance.violations = [violation]
+    
+    mock_get_compliance.return_value = mock_compliance
+    
+    response = client.get(f"/api/v1/inspections/{fake_id}/compliance")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "FAIL"
+    assert len(data["violations"]) == 1
+    assert data["violations"][0]["id"] == str(violation.id)
+    assert len(data["needs_review"]) == 1
+    assert "id" not in data["needs_review"][0] # Verify no ID is required/returned for needs_review
+    assert data["needs_review"][0]["rule_id"] == "RULE_3"

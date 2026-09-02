@@ -1,6 +1,7 @@
 import logging
 import sys
 
+
 def setup_logging(debug: bool = False):
     level = logging.DEBUG if debug else logging.INFO
     

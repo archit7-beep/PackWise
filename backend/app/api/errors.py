@@ -1,6 +1,6 @@
-from fastapi import Request
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from fastapi import FastAPI
+
 
 class PackWiseException(Exception):
     def __init__(self, message: str, status_code: int = 400):

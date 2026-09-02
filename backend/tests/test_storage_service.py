@@ -1,9 +1,12 @@
 import os
-import pytest
-import aiofiles
-from fastapi import UploadFile
 from io import BytesIO
+
+import aiofiles
+import pytest
+from fastapi import UploadFile
+
 from app.services.storage_service import StorageService
+
 
 @pytest.fixture
 def temp_storage_dir(tmp_path):

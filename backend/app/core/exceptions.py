@@ -1,8 +1,10 @@
-from typing import Any, Dict, Optional
-from fastapi import Request
+from typing import Any
+
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from fastapi import FastAPI
+
 from app.core.logging import logger
+
 
 class PackWiseException(Exception):
     def __init__(
@@ -10,7 +12,7 @@ class PackWiseException(Exception):
         message: str,
         code: str = "BAD_REQUEST",
         status_code: int = 400,
-        details: Optional[Dict[str, Any]] = None
+        details: dict[str, Any] | None = None
     ):
         self.message = message
         self.code = code
